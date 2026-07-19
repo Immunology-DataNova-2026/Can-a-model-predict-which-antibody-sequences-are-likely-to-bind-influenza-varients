@@ -1,0 +1,27 @@
+{
+  "arms": [
+    {
+      "arm": "antigen holdout",
+      "auroc": 0.9065395555086241,
+      "auprc": 0.8812756028120932,
+      "n_fit": 37618,
+      "n_val": 12067,
+      "pos_weight": 2.13875675201416
+    },
+    {
+      "arm": "random split",
+      "auroc": 0.9418547133254429,
+      "auprc": 0.928207379464893,
+      "n_fit": 37618,
+      "n_val": 12067,
+      "pos_weight": 2.226243495941162
+    }
+  ],
+  "inflation_auroc": 0.0353,
+  "inflation_auprc": 0.0469,
+  "held_out_antigens": [
+    "Delta_bead",
+    "Lambda_bead",
+    "WT_cell"
+  ]
+}

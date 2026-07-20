@@ -108,7 +108,6 @@ def main():
         ]
     )
 
-    # class imbalance: weight the positive class by the fit-set negative/positive ratio
     n_pos = (fit_df["label"] == 1).sum()
     n_neg = (fit_df["label"] == 0).sum()
     pos_weight = torch.tensor(n_neg / max(n_pos, 1), dtype=torch.float32, device=device)

@@ -1,16 +1,3 @@
-"""Dual-encoder antibody-antigen binding model with cross-attention fusion.
-
-Architecture (see plan doc for full rationale):
-  1. Antibody encoder and antigen encoder: two separately-weighted copies of a
-     pretrained protein language model (default: ESM-2, facebook/esm2_t6_8M_UR50D).
-  2. Cross-attention interaction module: stacked bidirectional cross-attention
-     layers where antibody tokens attend to antigen tokens and vice versa, so the
-     model learns residue-level complementarity instead of relying on pooled
-     embeddings alone.
-  3. Attention pooling + MLP head: pools each stream into a single vector,
-     concatenates them, and predicts a binding logit (and optionally an
-     affinity regression value via a second head).
-"""
 
 import torch
 import torch.nn as nn
@@ -18,7 +5,6 @@ from transformers import AutoModel
 
 
 class CrossAttentionLayer(nn.Module):
-    """One bidirectional cross-attention block: antibody<->antigen, each with a residual FFN."""
 
     def __init__(self, hidden_size: int, num_heads: int = 8, dropout: float = 0.1):
         super().__init__()
@@ -43,7 +29,6 @@ class CrossAttentionLayer(nn.Module):
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, ab_h, ag_h, ab_key_padding_mask, ag_key_padding_mask):
-        # antibody tokens attend to antigen tokens, and vice versa
         ab_attn_out, _ = self.ab_to_ag_attn(ab_h, ag_h, ag_h, key_padding_mask=ag_key_padding_mask)
         ag_attn_out, _ = self.ag_to_ab_attn(ag_h, ab_h, ab_h, key_padding_mask=ab_key_padding_mask)
 
@@ -57,18 +42,16 @@ class CrossAttentionLayer(nn.Module):
 
 
 class AttentionPooling(nn.Module):
-    """Learned attention pooling over a sequence of token embeddings, mask-aware."""
 
     def __init__(self, hidden_size: int):
         super().__init__()
         self.score = nn.Linear(hidden_size, 1)
 
     def forward(self, h: torch.Tensor, attention_mask: torch.Tensor) -> torch.Tensor:
-        # h: (batch, seq, hidden), attention_mask: (batch, seq) with 1=real token
-        scores = self.score(h).squeeze(-1)  # (batch, seq)
+        scores = self.score(h).squeeze(-1)
         scores = scores.masked_fill(attention_mask == 0, float("-inf"))
-        weights = torch.softmax(scores, dim=-1).unsqueeze(-1)  # (batch, seq, 1)
-        return (h * weights).sum(dim=1)  # (batch, hidden)
+        weights = torch.softmax(scores, dim=-1).unsqueeze(-1)
+        return (h * weights).sum(dim=1)
 
 
 class AntibodyAntigenBindingModel(nn.Module):
@@ -129,7 +112,6 @@ class AntibodyAntigenBindingModel(nn.Module):
             input_ids=antigen_input_ids, attention_mask=antigen_attention_mask
         ).last_hidden_state
 
-        # nn.MultiheadAttention key_padding_mask expects True = ignore
         ab_key_padding_mask = antibody_attention_mask == 0
         ag_key_padding_mask = antigen_attention_mask == 0
 

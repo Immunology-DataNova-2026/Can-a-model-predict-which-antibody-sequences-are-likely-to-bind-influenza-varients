@@ -1,16 +1,3 @@
-"""DataNova 2026 - antigen-holdout ablation for the antibody pipeline.
-
-    python controls_antibody.py
-
-Fills the Table 7 row: how much does a random split inflate AUROC compared with
-holding entire antigens out? Trains the committed architecture twice with the
-same recipe as train.py, changing only the split. Nothing is retuned or reseeded.
-
-Note on this machine: an intervening TLS proxy makes the Hugging Face download
-fail with the misleading "Cannot send a request, as the client has been closed".
-truststore verifies against the OS certificate store instead of OpenSSL's
-stricter parser, so verification stays ON - this is not a verify=False bypass.
-"""
 from __future__ import annotations
 
 import json
@@ -23,7 +10,7 @@ try:
     import truststore
 
     truststore.inject_into_ssl()
-except ImportError:  # optional; only needed behind a TLS-intercepting proxy
+except ImportError:
     pass
 
 SEED = 42
@@ -31,27 +18,6 @@ OUT = Path("reports")
 OUT.mkdir(exist_ok=True)
 
 def run_antibody():
-    """Ablate the antigen-holdout split: how much does a random split inflate the result?
-
-    Both arms use the SAME training recipe as train.py (the run that produced the
-    paper's committed numbers) - class-weighted BCE loss, gradient clipping,
-    lr_encoder=1e-5/lr_head=1e-4, max_antibody_length=192, max_antigen_length=800,
-    batch_size=16, 5 epochs - so the only thing that differs between arms is the
-    split methodology, which is the thing being measured.
-
-    Fixes vs. the original draft (verified against dataset.py/model.py/train.py):
-      - BindingDataset takes ONE arg (a Path or DataFrame); tokenization happens in
-        Collator, not the Dataset. The draft called BindingDataset(df, tok), which
-        does not match the real constructor.
-      - Arm A now uses the repo's own antigen_holdout_split() (seed=0, matching
-        train.py's default, so it is comparable to whatever protocol produced the
-        committed results) instead of `unique()[:3]`, which is pandas' arbitrary
-        first-seen order, not a random or reproducible split.
-      - Added the class-imbalance pos_weight and grad-norm clipping train.py uses,
-        so an arm doesn't look worse merely from being trained less carefully.
-
-    This retrains, so budget the same time as one training run per arm.
-    """
     import torch
     from sklearn.metrics import average_precision_score, roc_auc_score
     from sklearn.model_selection import train_test_split

@@ -1,4 +1,3 @@
-"""PyTorch Dataset + collation for antibody-antigen binding pairs."""
 
 from pathlib import Path
 from typing import Optional
@@ -13,7 +12,6 @@ PROCESSED_DIR = ROOT / "data" / "processed"
 
 
 class BindingDataset(Dataset):
-    """Wraps a processed AVIDa-SARS-CoV-2 split (antibody_sequence, antigen_sequence, label, Ag_label)."""
 
     def __init__(self, data: "Path | pd.DataFrame"):
         self.df = pd.read_csv(data) if not isinstance(data, pd.DataFrame) else data.reset_index(drop=True)
@@ -32,7 +30,6 @@ class BindingDataset(Dataset):
 
 
 class Collator:
-    """Tokenizes a batch of raw sequences into padded tensors for both encoders."""
 
     def __init__(
         self,
@@ -83,13 +80,6 @@ def antigen_holdout_split(
     n_holdout_antigens: int = 3,
     seed: int = 0,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Splits the training set into fit/cold-validation by holding entire antigens out.
-
-    This approximates the antigen-based "cold split" evaluation described in the
-    design doc: the model never sees the held-out antigens' binding pairs during
-    training, so validation performance reflects generalization to novel antigens
-    rather than memorization of antigen-specific patterns.
-    """
     df = pd.read_csv(train_csv)
     antigens = sorted(df["Ag_label"].unique())
     rng = torch.Generator().manual_seed(seed)

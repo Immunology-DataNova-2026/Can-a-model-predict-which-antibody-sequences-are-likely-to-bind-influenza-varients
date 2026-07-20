@@ -1,10 +1,3 @@
-"""Exploratory data analysis for the AVIDa-SARS-CoV-2 binding dataset.
-
-Reads data/processed/{train,test}.csv (produced by download_data.py) and
-writes summary stats + figures to outputs/figures/.
-
-Run: python data_analysis.py
-"""
 
 from pathlib import Path
 
@@ -42,7 +35,6 @@ def print_overview(df: pd.DataFrame) -> None:
     dup_pairs = df.duplicated(subset=["antibody_sequence", "Ag_label"]).sum()
     print(f"\nduplicate (antibody, antigen) pairs: {dup_pairs}")
 
-    # check for antibody sequences that appear with conflicting labels
     conflict = (
         df.groupby(["antibody_sequence", "Ag_label"])["label"]
         .nunique()
